@@ -1,0 +1,74 @@
+#!/usr/bin/env /usr/local/bin/php
+<?php
+
+//vendor autoload
+require_once __DIR__ . '/vendor/autoload.php';
+
+//Set max memory to infinite
+ini_set('memory_limit', '-1');
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx as Writer;
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx as Reader;
+
+$batchSize = 100;
+$srcFile = 'An-Example-Spreadsheet.xlsx';
+$destFileTemplate = 'An-Example-Spreadsheet-batch-%d.xlsx';
+$destFileDirectory = 'processed/';
+
+//The column of your unique identifier.
+$idIndex = 1;
+$skipEmptyIds = true;
+
+try {
+
+    $reader = new Reader();
+
+    $spreadsheet = $reader->load($srcFile);
+    $sheet = $spreadsheet->getActiveSheet();
+
+    $records = $sheet->toArray();
+
+    $header = array_shift($records);
+
+    if ($skipEmptyIds) {
+        //Filter out empty IDs
+        $records = array_filter($records, function ($value) use($idIndex) {
+            return $value[$idIndex] != '';
+        });
+    }
+
+    $index = 1;
+    $batches = [];
+    //Split records into batches
+    foreach ($records as $record) {
+        $i = floor($index / $batchSize);
+        $batches[$i][] = $record;
+        $index++;
+    }
+
+    foreach ($batches as $key => $batch) {
+        $spreadsheetNew = new Spreadsheet();
+        $sheetNew = $spreadsheetNew->getActiveSheet();
+
+        $sheetNew->fromArray($header);
+        $batchIndex = 2;
+        foreach ($batch as $row) {
+            $sheetNew->fromArray($row, null, 'A' . $batchIndex);
+            $batchIndex++;
+        }
+
+        $writer = new Writer($spreadsheetNew);
+        $filename = $destFileDirectory . sprintf($destFileTemplate, $key+1);
+        $writer->save($filename);
+        echo 'Created Spreadsheet ' . $filename . PHP_EOL;
+    }
+
+    $arr = $sheet->toArray();
+    $header = $arr[0];
+    echo count($arr);
+
+
+} catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+} catch (\PhpOffice\PhpSpreadsheet\Writer\Exception $e) {
+}

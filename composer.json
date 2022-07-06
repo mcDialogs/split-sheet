@@ -1,0 +1,15 @@
+{
+  "name": "dialogs/split-excel",
+  "description": "Split a large Excel sheet into smaller files.",
+  "type": "project",
+  "require": {
+    "phpoffice/phpspreadsheet": "^1.23"
+  },
+  "autoload": {
+  },
+  "config": {
+    "platform":{
+      "php":"7.4"
+    }
+  }
+}
